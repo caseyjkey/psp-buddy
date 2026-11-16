@@ -1,0 +1,26 @@
+table inet psp_buddy {
+  chain prerouting {
+    type nat hook prerouting priority dstnat; policy accept;
+
+    # The PSP browser is more reliable with ordinary HTTP on port 80.
+    # Keep the unprivileged bridge on 17322 and redirect only PSP WLAN traffic.
+    iifname "wlp25s0u2" tcp dport 80 redirect to :17322 comment "PSP Buddy HTTP alias"
+  }
+
+  chain input {
+    type filter hook input priority -10; policy accept;
+
+    iifname "wlp25s0u2" udp dport 67 accept comment "PSP DHCP"
+    iifname "wlp25s0u2" tcp dport 17322 counter accept comment "PSP Buddy bridge"
+    iifname "wlp25s0u2" ip protocol icmp icmp type echo-request accept comment "PSP diagnostics"
+    iifname "wlp25s0u2" counter reject comment "isolate legacy PSP WLAN from Gilbert"
+  }
+
+  chain forward {
+    type filter hook forward priority -10; policy accept;
+
+    iifname "wlp25s0u2" counter reject comment "no PSP forwarding to LAN or internet"
+    oifname "wlp25s0u2" ct state established,related accept
+    oifname "wlp25s0u2" counter reject comment "no inbound forwarding to PSP"
+  }
+}

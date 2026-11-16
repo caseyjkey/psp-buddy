@@ -1,0 +1,27 @@
+{
+  "$schema": "https://pocketjs.dev/schema/pocket-2.json",
+  "pocket": 2,
+  "id": "com.keycasey.psp-buddy",
+  "name": "psp-buddy",
+  "title": "PSP Buddy",
+  "version": "0.4.2",
+  "engine": {
+    "capabilities": {
+      "requires": [
+        "text.glyphs.baked",
+        "input.buttons"
+      ]
+    }
+  },
+  "app": {
+    "entry": "src/main.tsx",
+    "output": "psp-buddy-main",
+    "framework": "solid",
+    "viewport": {
+      "fixed": {
+        "logical": [480, 272],
+        "presentation": "integer-fit"
+      }
+    }
+  }
+}

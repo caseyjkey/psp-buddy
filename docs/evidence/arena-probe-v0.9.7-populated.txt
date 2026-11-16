@@ -1,0 +1,17 @@
+PROBE frame 0 bump 5973136 tail 8917616 free 9524688 largest 8917616 qlive 1944205 qpeak 1990687 qcalls 2148 qfail 0 cap 14890752
+PROBE frame 300 bump 6201312 tail 8689440 free 9082208 largest 8689440 qlive 1944205 qpeak 1990687 qcalls 4098 qfail 0 cap 14890752
+PROBE frame 600 bump 6201312 tail 8689440 free 9082208 largest 8689440 qlive 1944205 qpeak 1990687 qcalls 6048 qfail 0 cap 14890752
+PROBE frame 900 bump 6201312 tail 8689440 free 9082208 largest 8689440 qlive 1944205 qpeak 1990687 qcalls 7998 qfail 0 cap 14890752
+PROBE frame 1200 bump 6201312 tail 8689440 free 9082208 largest 8689440 qlive 1944205 qpeak 1990687 qcalls 9948 qfail 0 cap 14890752
+PROBE frame 1500 bump 6201312 tail 8689440 free 9082208 largest 8689440 qlive 1944205 qpeak 1990687 qcalls 11898 qfail 0 cap 14890752
+PROBE frame 1800 bump 6201312 tail 8689440 free 9082208 largest 8689440 qlive 1944205 qpeak 1990687 qcalls 13848 qfail 0 cap 14890752
+PROBE frame 2100 bump 6201312 tail 8689440 free 9082208 largest 8689440 qlive 1944205 qpeak 1990687 qcalls 15798 qfail 0 cap 14890752
+PROBE frame 2400 bump 6201312 tail 8689440 free 9082208 largest 8689440 qlive 1944205 qpeak 1990687 qcalls 17748 qfail 0 cap 14890752
+PROBE frame 2700 bump 6201312 tail 8689440 free 9082208 largest 8689440 qlive 1944205 qpeak 1990687 qcalls 19698 qfail 0 cap 14890752
+PROBE frame 3000 bump 6201312 tail 8689440 free 9082208 largest 8689440 qlive 1944205 qpeak 1990687 qcalls 21648 qfail 0 cap 14890752
+PROBE frame 3300 bump 6201312 tail 8689440 free 9082208 largest 8689440 qlive 1944205 qpeak 1990687 qcalls 23598 qfail 0 cap 14890752
+PROBE frame 3600 bump 6201312 tail 8689440 free 9082208 largest 8689440 qlive 1944205 qpeak 1990687 qcalls 25548 qfail 0 cap 14890752
+PROBE frame 3900 bump 6201312 tail 8689440 free 9082208 largest 8689440 qlive 1944205 qpeak 1990687 qcalls 27498 qfail 0 cap 14890752
+PROBE frame 4200 bump 6201312 tail 8689440 free 9082208 largest 8689440 qlive 1944205 qpeak 1990687 qcalls 29448 qfail 0 cap 14890752
+PROBE frame 4500 bump 6201312 tail 8689440 free 9082208 largest 8689440 qlive 1944205 qpeak 1990687 qcalls 31398 qfail 0 cap 14890752
+PROBE frame 4800 bump 6201312 tail 8689440 free 9082208 largest 8689440 qlive 1944205 qpeak 1990687 qcalls 33348 qfail 0 cap 14890752

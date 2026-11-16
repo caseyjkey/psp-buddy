@@ -1,0 +1,89 @@
+{
+  "outline-codex-fish-sleep.png": {"cols": 4, "frames": 8, "psm": 2, "rows": 2, "step": 5},
+  "outline-codex-fish.png": {"cols": 4, "frames": 8, "psm": 2, "rows": 2, "step": 5},
+  "outline-meta-snail-sleep.png": {"cols": 4, "frames": 8, "psm": 2, "rows": 2, "step": 5},
+  "outline-meta-snail.png": {"cols": 4, "frames": 8, "psm": 2, "rows": 2, "step": 5},
+  "outline-minimax-jellyfish-sleep.png": {"cols": 4, "frames": 8, "psm": 2, "rows": 2, "step": 5},
+  "outline-minimax-jellyfish.png": {"cols": 4, "frames": 8, "psm": 2, "rows": 2, "step": 5},
+  "outline-muse-crab-sleep.png": {"cols": 4, "frames": 8, "psm": 2, "rows": 2, "step": 5},
+  "outline-muse-crab.png": {"cols": 4, "frames": 8, "psm": 2, "rows": 2, "step": 5},
+  "outline-opencode-go-crab-sleep.png": {"cols": 4, "frames": 8, "psm": 2, "rows": 2, "step": 5},
+  "outline-opencode-go-crab.png": {"cols": 4, "frames": 8, "psm": 2, "rows": 2, "step": 5},
+  "butterfly-sleep.png": {
+    "cols": 4,
+    "frames": 8,
+    "psm": 2,
+    "rows": 2,
+    "step": 5
+  },
+  "butterfly.png": {
+    "cols": 4,
+    "frames": 8,
+    "psm": 2,
+    "rows": 2,
+    "step": 5
+  },
+  "crab-sleep.png": {
+    "cols": 4,
+    "frames": 8,
+    "psm": 2,
+    "rows": 2,
+    "step": 5
+  },
+  "crab.png": {
+    "cols": 4,
+    "frames": 8,
+    "psm": 2,
+    "rows": 2,
+    "step": 5
+  },
+  "fish-sleep.png": {
+    "cols": 4,
+    "frames": 8,
+    "psm": 2,
+    "rows": 2,
+    "step": 5
+  },
+  "fish.png": {
+    "cols": 4,
+    "frames": 8,
+    "psm": 2,
+    "rows": 2,
+    "step": 5
+  },
+  "ground.png": {
+    "cols": 1,
+    "frames": 1,
+    "psm": 2,
+    "rows": 1,
+    "step": 1
+  },
+  "jellyfish-sleep.png": {
+    "cols": 4,
+    "frames": 8,
+    "psm": 2,
+    "rows": 2,
+    "step": 5
+  },
+  "jellyfish.png": {
+    "cols": 4,
+    "frames": 8,
+    "psm": 2,
+    "rows": 2,
+    "step": 5
+  },
+  "snail-sleep.png": {
+    "cols": 4,
+    "frames": 8,
+    "psm": 2,
+    "rows": 2,
+    "step": 5
+  },
+  "snail.png": {
+    "cols": 4,
+    "frames": 8,
+    "psm": 2,
+    "rows": 2,
+    "step": 5
+  }
+}

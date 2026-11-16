@@ -1,0 +1,17 @@
+[Unit]
+Description=PSP Buddy Token Monitor bridge
+After=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/alpha/Development/psp-buddy/bridge
+ExecStart=/usr/bin/node /home/alpha/Development/psp-buddy/bridge/server.js
+Restart=on-failure
+RestartSec=3
+Environment=PSP_BUDDY_BIND=0.0.0.0
+Environment=PSP_BUDDY_PORT=17322
+Environment=PSP_BUDDY_REMOTE_OPENCLAW_HOST=omarchy
+Environment=PSP_BUDDY_REMOTE_OPENCLAW_PROBE=/home/beast/Development/psp-buddy/bridge/live-agent-probe.js
+
+[Install]
+WantedBy=default.target

@@ -1,0 +1,3 @@
+PROBE frame 0 bump 5365200 tail 9528624 free 10173232 largest 9528624 qlive 1425630 qpeak 1476811 qcalls 1820 qfail 0 cap 14893824
+PROBE frame 300 bump 12020912 tail 2872912 free 7745616 largest 2872912 qlive 3358246 qpeak 7251542 qcalls 30928 qfail 0 cap 14893824
+PROBE frame 600 bump 14798256 tail 95568 free 5177424 largest 262144 qlive 5655350 qpeak 9731014 qcalls 61032 qfail 0 cap 14893824

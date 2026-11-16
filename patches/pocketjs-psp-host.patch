@@ -1,0 +1,198 @@
+diff --git a/framework/src/host.ts b/framework/src/host.ts
+--- a/framework/src/host.ts
++++ b/framework/src/host.ts
+@@ -187,2 +187,10 @@ export interface HostOps {
+   svcOpen?(app: string): boolean;
++  /** Optional standalone-device state blob. PSP confines it to this app's
++   * SAVEDATA directory and caps it at 4 KiB. */
++  persistRead?(): string | undefined;
++  persistWrite?(json: string): boolean;
++  /** Optional low-frequency JSON snapshot of wall clock and power state. */
++  systemSnapshot?(): string;
++  /** PSP-only per-frame idle timer reset used by opt-in desk displays. */
++  keepAwakeTick?(): void;
+   /** New COMPLETE JSON lines from the host since the last poll (may batch
+diff --git a/hosts/psp/src/lib.rs b/hosts/psp/src/lib.rs
+--- a/hosts/psp/src/lib.rs
++++ b/hosts/psp/src/lib.rs
+@@ -31,11 +31,13 @@ mod framebuffer;
+ pub mod ge;
+ pub mod host;
+ pub mod pak;
++pub mod persist;
+ #[cfg(feature = "runtime")]
+ pub mod package_file;
+ pub mod qjs_alloc;
+ pub mod stats;
+ pub mod svc;
+ pub mod switch;
++pub mod system_info;
+ pub mod veil;
+ pub mod vid;
+diff --git a/hosts/psp/src/ffi.rs b/hosts/psp/src/ffi.rs
+--- a/hosts/psp/src/ffi.rs
++++ b/hosts/psp/src/ffi.rs
+@@ -750,4 +750,60 @@ unsafe extern "C" fn js_svc_send(
+     JS_UNDEFINED
+ }
+ 
++/// Standalone PSP utility surface. These bounded operations are optional host
++/// enhancements rather than portable PocketJS spec ops.
++unsafe extern "C" fn js_persist_read(
++    ctx: *mut JSContext,
++    _this: JSValue,
++    _argc: i32,
++    _argv: *mut JSValue,
++) -> JSValue {
++    match crate::persist::read() {
++        Some(s) => JS_NewStringLen(ctx, s.as_ptr(), s.len()),
++        None => JS_UNDEFINED,
++    }
++}
++
++unsafe extern "C" fn js_persist_write(
++    ctx: *mut JSContext,
++    _this: JSValue,
++    argc: i32,
++    argv: *mut JSValue,
++) -> JSValue {
++    let ok = if argc < 1 {
++        false
++    } else {
++        let mut len: size_t = 0;
++        let s = JS_ToCStringLen2(ctx, &mut len, *argv.offset(0), 0);
++        if s.is_null() {
++            false
++        } else {
++            let ok = crate::persist::write(core::slice::from_raw_parts(s as *const u8, len));
++            JS_FreeCString(ctx, s);
++            ok
++        }
++    };
++    JS_NewBool(ctx, ok)
++}
++
++unsafe extern "C" fn js_system_snapshot(
++    ctx: *mut JSContext,
++    _this: JSValue,
++    _argc: i32,
++    _argv: *mut JSValue,
++) -> JSValue {
++    let s = crate::system_info::json();
++    JS_NewStringLen(ctx, s.as_ptr(), s.len())
++}
++
++unsafe extern "C" fn js_keep_awake_tick(
++    _ctx: *mut JSContext,
++    _this: JSValue,
++    _argc: i32,
++    _argv: *mut JSValue,
++) -> JSValue {
++    let _ = psp::sys::scePowerTick(psp::sys::PowerTick::All);
++    JS_UNDEFINED
++}
++
+ /// ui.loadImgFile(path) -> handle | -1 (spec op 33): read a small IMG-entry
+@@ -1311,4 +1367,8 @@ pub unsafe fn register(
+     add_fn(ctx, ui_obj, b"svcOpen\0", js_svc_open, 1);
+     add_fn(ctx, ui_obj, b"svcPoll\0", js_svc_poll, 0);
+     add_fn(ctx, ui_obj, b"svcSend\0", js_svc_send, 1);
++    add_fn(ctx, ui_obj, b"persistRead\0", js_persist_read, 0);
++    add_fn(ctx, ui_obj, b"persistWrite\0", js_persist_write, 1);
++    add_fn(ctx, ui_obj, b"systemSnapshot\0", js_system_snapshot, 0);
++    add_fn(ctx, ui_obj, b"keepAwakeTick\0", js_keep_awake_tick, 0);
+     add_fn(ctx, ui_obj, b"loadImgFile\0", js_load_img_file, 1);
+diff --git a/hosts/psp/src/persist.rs b/hosts/psp/src/persist.rs
+new file mode 100644
+--- /dev/null
++++ b/hosts/psp/src/persist.rs
+@@ -0,0 +1,53 @@
++//! Tiny app-state store for standalone PSP programs.
++use alloc::string::String;
++use core::ffi::c_void;
++use psp::sys::{self, IoOpenFlags, IoWhence};
++
++const MAX_BYTES: usize = 4096;
++const DIR: &[u8] = b"ms0:/PSP/SAVEDATA/PSPBUDDY\0";
++const STATE: &[u8] = b"ms0:/PSP/SAVEDATA/PSPBUDDY/state.json\0";
++const NEXT: &[u8] = b"ms0:/PSP/SAVEDATA/PSPBUDDY/state.next\0";
++
++unsafe fn read_path(path: &[u8]) -> Option<String> {
++    let fd = sys::sceIoOpen(path.as_ptr(), IoOpenFlags::RD_ONLY, 0o777);
++    if fd.0 < 0 { return None; }
++    let len = sys::sceIoLseek(fd, 0, IoWhence::End);
++    if len <= 0 || len as usize > MAX_BYTES {
++        sys::sceIoClose(fd);
++        return None;
++    }
++    sys::sceIoLseek(fd, 0, IoWhence::Set);
++    let mut bytes = alloc::vec![0u8; len as usize];
++    let mut read = 0usize;
++    while read < bytes.len() {
++        let n = sys::sceIoRead(fd, bytes.as_mut_ptr().add(read) as *mut c_void, (bytes.len() - read) as u32);
++        if n <= 0 { break; }
++        read += n as usize;
++    }
++    sys::sceIoClose(fd);
++    if read != bytes.len() { return None; }
++    String::from_utf8(bytes).ok()
++}
++
++pub unsafe fn read() -> Option<String> {
++    read_path(STATE).or_else(|| read_path(NEXT))
++}
++
++pub unsafe fn write(bytes: &[u8]) -> bool {
++    if bytes.is_empty() || bytes.len() > MAX_BYTES || core::str::from_utf8(bytes).is_err() {
++        return false;
++    }
++    sys::sceIoMkdir(DIR.as_ptr(), 0o777);
++    let fd = sys::sceIoOpen(NEXT.as_ptr(), IoOpenFlags::WR_ONLY | IoOpenFlags::CREAT | IoOpenFlags::TRUNC, 0o777);
++    if fd.0 < 0 { return false; }
++    let mut written = 0usize;
++    while written < bytes.len() {
++        let n = sys::sceIoWrite(fd, bytes.as_ptr().add(written) as *const c_void, bytes.len() - written);
++        if n <= 0 { break; }
++        written += n as usize;
++    }
++    sys::sceIoClose(fd);
++    if written != bytes.len() { return false; }
++    sys::sceIoRemove(STATE.as_ptr());
++    sys::sceIoRename(NEXT.as_ptr(), STATE.as_ptr()) >= 0
++}
+diff --git a/hosts/psp/src/system_info.rs b/hosts/psp/src/system_info.rs
+new file mode 100644
+--- /dev/null
++++ b/hosts/psp/src/system_info.rs
+@@ -0,0 +1,19 @@
++//! Low-frequency wall-clock and power snapshot for desk applications.
++use alloc::string::String;
++use psp::sys::{self, ScePspDateTime};
++
++pub unsafe fn json() -> String {
++    let mut now = ScePspDateTime::default();
++    let rtc_ok = sys::sceRtcGetCurrentClockLocalTime(&mut now) >= 0;
++    let mut epoch = 0u64;
++    if rtc_ok { sys::sceRtcGetTime64_t(&now, &mut epoch); }
++    let battery = sys::scePowerGetBatteryLifePercent();
++    let minutes = sys::scePowerGetBatteryLifeTime();
++    alloc::format!(
++        "{{\"year\":{},\"month\":{},\"day\":{},\"hour\":{},\"minute\":{},\"second\":{},\"epoch\":{},\"battery\":{},\"batteryMinutes\":{},\"charging\":{},\"powerOnline\":{}}}",
++        now.year, now.month, now.day, now.hour, now.minutes, now.seconds,
++        epoch, battery, minutes,
++        sys::scePowerIsBatteryCharging() > 0,
++        sys::scePowerIsPowerOnline() > 0,
++    )
++}
+diff --git a/tools/psp.ts b/tools/psp.ts
+--- a/tools/psp.ts
++++ b/tools/psp.ts
+@@ -333,7 +333,7 @@ const env = {
+   // it every C dependency (QuickJS!) silently compiles at -O0.
+   TARGET_CFLAGS:
+     `-target mipsel-sony-psp -mcpu=mips2 -msingle-float -mlittle-endian -mno-abicalls -fno-pic -G0 -mno-check-zero-division ` +
+-    `-fno-stack-protector -O2 -I${sdk}/psp/include -I${sdk}/psp/sdk/include`,
++    `-fno-stack-protector -ffreestanding -O2 -I${sdk}/psp/include -I${sdk}/psp/sdk/include`,
+   // CRITICAL: archive MIPS objects with llvm-ar (Apple ar drops them -> undefined JS_*).
+   AR_mipsel_sony_psp: `${toolchain.llvmBin}/llvm-ar`,
+   RANLIB_mipsel_sony_psp: `${toolchain.llvmBin}/llvm-ranlib`,

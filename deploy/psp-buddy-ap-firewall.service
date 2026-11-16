@@ -1,0 +1,13 @@
+[Unit]
+Description=Firewall isolation for PSP Buddy legacy Wi-Fi
+After=NetworkManager.service
+Wants=NetworkManager.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/home/alpha/Development/psp-buddy/deploy/psp-buddy-ap-firewall.sh start
+ExecStop=/home/alpha/Development/psp-buddy/deploy/psp-buddy-ap-firewall.sh stop
+
+[Install]
+WantedBy=multi-user.target

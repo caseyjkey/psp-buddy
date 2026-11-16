@@ -1,0 +1,45 @@
+diff --git a/framework/src/host.ts b/framework/src/host.ts
+--- a/framework/src/host.ts
++++ b/framework/src/host.ts
+@@ -193,2 +193,4 @@ export interface HostOps {
+   keepAwakeTick?(): void;
++  /** PSP-only, bounded fetch of the fixed local Buddy bridge endpoint. */
++  buddySnapshot?(): string;
+   /** New COMPLETE JSON lines from the host since the last poll (may batch
+diff --git a/hosts/psp/src/lib.rs b/hosts/psp/src/lib.rs
+--- a/hosts/psp/src/lib.rs
++++ b/hosts/psp/src/lib.rs
+@@ -24,2 +24,3 @@
+ pub mod audio_mod;
++pub mod buddy_net;
+ pub mod c_heap;
+diff --git a/hosts/psp/src/ffi.rs b/hosts/psp/src/ffi.rs
+--- a/hosts/psp/src/ffi.rs
++++ b/hosts/psp/src/ffi.rs
+@@ -806,3 +806,13 @@ unsafe extern "C" fn js_keep_awake_tick(
+ }
++
++unsafe extern "C" fn js_buddy_snapshot(
++    ctx: *mut JSContext,
++    _this: JSValue,
++    _argc: i32,
++    _argv: *mut JSValue,
++) -> JSValue {
++    let s = crate::buddy_net::snapshot();
++    JS_NewStringLen(ctx, s.as_ptr(), s.len())
++}
+ 
+ /// ui.loadImgFile(path) -> handle | -1 (spec op 33): read a small IMG-entry
+@@ -1371,2 +1381,3 @@ pub unsafe fn register(
+     add_fn(ctx, ui_obj, b"keepAwakeTick\0", js_keep_awake_tick, 0);
++    add_fn(ctx, ui_obj, b"buddySnapshot\0", js_buddy_snapshot, 0);
+     add_fn(ctx, ui_obj, b"loadImgFile\0", js_load_img_file, 1);
+diff --git a/hosts/psp/src/main.rs b/hosts/psp/src/main.rs
+--- a/hosts/psp/src/main.rs
++++ b/hosts/psp/src/main.rs
+@@ -370,2 +370,5 @@ unsafe fn boot() {
+     trace_reset();
++    if env!("POCKETJS_APP") == "psp-buddy-main" {
++        pocketjs_psp::buddy_net::load_modules();
++    }
+     // The generic runtime reads its game here: on the module's main thread,
