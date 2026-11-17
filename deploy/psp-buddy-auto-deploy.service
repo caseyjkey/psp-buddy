@@ -1,0 +1,9 @@
+[Unit]
+Description=Deploy the verified PSP Buddy EBOOT when the PSP is connected
+After=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/home/beast/Development/psp-buddy
+ExecStart=/home/beast/Development/psp-buddy/tools/deploy-when-plugged.sh
+SuccessExitStatus=0 2

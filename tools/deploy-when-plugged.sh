@@ -93,6 +93,16 @@ if [ -z "$DRIVE" ]; then
 fi
 log "Memory Stick is $DRIVE"
 
+# Avoid retransferring the same 8 MB build every timer tick. The device hash
+# is checked only after the volume has been proven to be a PSP volume.
+CURRENT=$(ssh -o ConnectTimeout=15 -o BatchMode=yes "$AURORA" \
+  "cd /mnt/c && WSL_INTEROP='$WSL_INTEROP_SOCKET' /mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe -NoProfile -Command \"\$dst='${DRIVE}\\PSP\\GAME\\PSPBUDDY\\EBOOT.PBP'; if (Test-Path \$dst) { (Get-FileHash \$dst -Algorithm SHA256).Hash }\"" \
+  2>/dev/null | tr -d '\r' | tail -1 | tr 'A-F' 'a-f')
+if [ "$CURRENT" = "$EXPECTED_SHA" ]; then
+  log "already deployed: $EXPECTED_SIZE bytes, sha256 $EXPECTED_SHA"
+  exit 0
+fi
+
 # --- stage + deploy ---
 scp -q "$STAGED" "$AURORA:/mnt/c/Users/Public/$WIN_STAGE" || {
   log "staging copy to Windows failed"; exit 3; }
