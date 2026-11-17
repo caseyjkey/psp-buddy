@@ -27,6 +27,26 @@ function openReadonlyDatabase(file) {
   return new DatabaseSync(file, { readOnly: true });
 }
 
+/** Read cumulative assistant output, including the currently streaming turn. */
+function sessionOutputTotal(db, sessionId) {
+  let total = 0;
+  try {
+    const rows = db.prepare(
+      'SELECT event_json FROM transcript_events WHERE session_id = ? AND event_json IS NOT NULL'
+    ).all(sessionId);
+    for (const row of rows) {
+      let event;
+      try { event = JSON.parse(row.event_json); } catch { continue; }
+      if (event?.type !== 'message' || event.message?.role !== 'assistant') continue;
+      const value = finite(event.message?.usage?.output, null);
+      if (value !== null && value >= 0) total += value;
+    }
+  } catch {
+    return 0;
+  }
+  return total;
+}
+
 function finite(value, fallback = null) {
   const number = Number(value);
   return Number.isFinite(number) ? number : fallback;
@@ -515,13 +535,10 @@ function liveAgents(now = Date.now()) {
         // so its rates read 0 while an agent is demonstrably generating.
         // The session entry carries the real per-session output total, so
         // each creature's speed can be measured rather than guessed.
-        let entry;
-        try {
-          entry = JSON.parse(row.entryJson);
-        } catch {
-          continue;
-        }
-        const output = finite(entry?.outputTokens, null);
+        const output = sessionOutputTotal(
+          db,
+          row.sessionId,
+        );
         const list = rates[provider] || (rates[provider] = []);
         list.push({ sessionId: row.sessionId, outputTokens: output ?? 0 });
       }

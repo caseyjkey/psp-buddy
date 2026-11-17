@@ -29,6 +29,28 @@ function files() {
   }
 }
 
+// OpenClaw writes usage on assistant transcript events as a turn progresses;
+// the session entry's aggregate outputTokens is only committed at turn end.
+// Sum the event-level output counters so the bridge can see an active turn.
+function outputTotal(db, sessionId) {
+  let total = 0;
+  try {
+    const rows = db.prepare(
+      'SELECT event_json FROM transcript_events WHERE session_id = ? AND event_json IS NOT NULL'
+    ).all(sessionId);
+    for (const row of rows) {
+      let event;
+      try { event = JSON.parse(row.event_json); } catch { continue; }
+      if (event?.type !== 'message' || event.message?.role !== 'assistant') continue;
+      const value = Number(event.message?.usage?.output);
+      if (Number.isFinite(value) && value >= 0) total += value;
+    }
+  } catch {
+    return 0;
+  }
+  return total;
+}
+
 const now = Date.now();
 const cutoff = now - ACTIVE_MS;
 const counts = {};
@@ -51,11 +73,11 @@ for (const file of files()) {
       const provider = tankProvider(row.provider);
       if (!provider) continue;
       counts[provider] = (counts[provider] || 0) + 1;
-      let entry;
-      try { entry = JSON.parse(row.entryJson); } catch { entry = {}; }
       (rates[provider] || (rates[provider] = [])).push({
         sessionId: String(row.sessionId),
-        outputTokens: Number(entry.outputTokens) || 0
+        // Never fall back to the session aggregate here: for Codex it can be
+        // cache/total-token accounting rather than generated output.
+        outputTokens: outputTotal(db, row.sessionId)
       });
     }
   } catch {

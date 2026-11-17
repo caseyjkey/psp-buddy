@@ -46,6 +46,9 @@ const CREATURE_PX = 48;
 const SCENE_W = TANK_W;
 /** Height of the sky band at the top of the scene, when one is shown. */
 const SKY_H = 72;
+/** Match the bridge poll interval so live output rates do not sit stale for
+ * half a minute after a conversation turn changes. */
+const BRIDGE_REFRESH_FRAMES = 120;
 
 // Kimi is a routed backend that can appear inside a mixed OpenClaw session;
 // it is not one of the subscriptions represented by this tank. Muse is.
@@ -257,7 +260,7 @@ export default function App() {
     lastMs = now;
     if (keepAwake()) keepAwakeTick();
     if (frames % 60 === 0) setSystem(systemSnapshot());
-    if (frames === 120 || frames % 1800 === 0) refresh();
+    if (frames === 120 || frames % BRIDGE_REFRESH_FRAMES === 0) refresh();
     // Age the sample. The delta is accumulated locally, so it stays
     // correct regardless of what the device's absolute clock reads.
     secondsSinceRefresh = elapsed.now();
