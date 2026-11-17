@@ -572,22 +572,17 @@ function liveAgents(now = Date.now()) {
  * each agent's own output rate. Token Monitor's view lags its scan, so its
  * counts can read zero while an agent is demonstrably working.
  *
- * `memory` carries the previous per-session output totals and the last
- * measured rate per session:
+ * `memory` carries the previous per-session output totals:
  *   - `liveOutputTokens`: session id -> output token total at the last poll
- *   - `liveAgentRates`: session id -> last measured output tokens/sec
- *
- * A session's output total is committed at the END of a turn, so the delta
- * is zero for most polls. Dropping the rate to zero then froze the
- * creature between turns, so the last measured rate is HELD instead: it is
- * still that agent's own number, not the provider's aggregate.
+ * A session's output total is committed at the END of a turn. A zero delta
+ * therefore means the agent is idle for this sample and must be published as
+ * zero; holding an old rate makes a finished turn look active indefinitely.
  */
 function applyLiveAgents(state, live, memory = {}, now = Date.now()) {
   if (!live) return { state, memory: {} };
   const counts = live.counts || {};
   const rates = live.rates || {};
   const previous = memory.liveOutputTokens || {};
-  const heldRates = memory.liveAgentRates || {};
   const elapsedSec = Math.max(1, (now - (memory.sampledAt || now - 10000)) / 1000);
 
   for (const [provider, row] of Object.entries(state.models)) {
@@ -605,18 +600,15 @@ function applyLiveAgents(state, live, memory = {}, now = Date.now()) {
       const before = Number(previous[item.sessionId]);
       const delta = Number.isFinite(before) ? Math.max(0, item.outputTokens - before) : 0;
       const rate = Math.round(delta / elapsedSec);
-      if (rate > 0) {
-        heldRates[item.sessionId] = rate;
-        return rate;
-      }
-      return heldRates[item.sessionId] || 0;
+      return rate;
     });
     // When Token Monitor has useful per-session rates for sessions outside
     // OpenClaw, retain those in the remaining slots (Codex desktop / OpenCode
     // CLI). Pad unmeasured agents with 0; never distribute an aggregate rate
     // to every creature.
+    const hasLiveRateSource = Object.prototype.hasOwnProperty.call(rates, provider);
     row.agentRates = Array.from({ length: row.agentCount }, (_, index) => (
-      liveRates[index] ?? upstreamRates[index] ?? 0
+      liveRates[index] ?? (hasLiveRateSource ? 0 : upstreamRates[index] ?? 0)
     ));
     row.tokensPerSecond = row.agentRates.reduce((sum, rate) => sum + rate, 0);
     row.tokensPerSecondPerAgent = row.agentCount > 0
@@ -663,7 +655,7 @@ function applyLiveAgents(state, live, memory = {}, now = Date.now()) {
           list.map((item) => [item.sessionId, item.outputTokens])
         ))
       ),
-      liveAgentRates: heldRates
+      liveAgentRates: {}
     }
   };
 }

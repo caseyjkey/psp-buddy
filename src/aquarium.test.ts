@@ -64,7 +64,7 @@ describe("aquarium motion", () => {
     const idle = buildCreatures(codex(0), [busy], 1)[0];
 
     expect(busy.wanderPhase - initial.wanderPhase).toBeCloseTo(0.40, 6);
-    expect(idle.wanderPhase - busy.wanderPhase).toBeCloseTo(0.22, 6);
+    expect(idle.wanderPhase - busy.wanderPhase).toBeCloseTo(0, 6);
     expect(Math.abs(busy.x - initial.x)).toBeLessThan(0.08);
     expect(Math.abs(idle.x - busy.x)).toBeLessThan(0.08);
   });
@@ -153,8 +153,8 @@ describe("aquarium motion", () => {
       "opencode-go": { ...codex(60).codex, agentCount: 1, agentRates: [60] },
     } as Record<Provider, ProviderTelemetry>, [], 1)[0];
 
-    expect(fish.wanderPhase - fishStart.wanderPhase).toBeCloseTo(0.31, 6);
-    expect(jelly.wanderPhase - jellyStart.wanderPhase).toBeCloseTo(0.12, 6);
+    expect(fish.wanderPhase - fishStart.wanderPhase).toBeCloseTo(0.155, 6);
+    expect(jelly.wanderPhase - jellyStart.wanderPhase).toBeCloseTo(0.06, 6);
     expect(fish.wanderPhase - fishStart.wanderPhase)
       .toBeGreaterThan(jelly.wanderPhase - jellyStart.wanderPhase);
     expect(crab.depth).toBe(0);
@@ -162,8 +162,8 @@ describe("aquarium motion", () => {
 
   test("bottom dwellers scuttle across the floor and keep their legs animated while idle", () => {
     const telemetry = {
-      muse: { ...codex(0).codex, agentCount: 1, agentRates: [0] },
-      "opencode-go": { ...codex(0).codex, agentCount: 1, agentRates: [0] },
+      muse: { ...codex(120).codex, agentCount: 1, agentRates: [120] },
+      "opencode-go": { ...codex(120).codex, agentCount: 1, agentRates: [120] },
     } as Record<Provider, ProviderTelemetry>;
     const first = buildCreatures(telemetry, [], 0);
     const next = buildCreatures(telemetry, first, 1);
@@ -172,5 +172,15 @@ describe("aquarium motion", () => {
     expect(next.every((c) => c.depth === 0)).toBe(true);
     expect(next.every((c) => c.frameStep === 2)).toBe(true);
     expect(next.every((c, i) => Math.abs(c.x - first[i].x) > 0.01)).toBe(true);
+  });
+
+  test("zero output stops creature movement", () => {
+    const telemetry = {
+      muse: { ...codex(0).codex, agentCount: 1, agentRates: [0] },
+    } as Record<Provider, ProviderTelemetry>;
+    const first = buildCreatures(telemetry, [], 0);
+    const next = buildCreatures(telemetry, first, 1);
+    expect(next[0].wanderPhase).toBe(first[0].wanderPhase);
+    expect(next[0].x).toBe(first[0].x);
   });
 });

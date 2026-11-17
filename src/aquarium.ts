@@ -454,7 +454,11 @@ export function buildCreatures(
       // tank; jellyfish drift slowly; bottom dwellers scuttle in short,
       // deliberate passes. Previously every non-fish used the same faster
       // swimmer constants, so jellyfish matched or outran the fish.
-      const angularSpeed = provider === "codex"
+      // Locomotion is proportional to this agent's measured output rate.
+      // Zero output is an honest idle state: the creature must stop rather
+      // than continuing to wander on a stale or decorative heartbeat.
+      const speedScale = energy;
+      const angularSpeed = (provider === "codex"
         ? 0.22 + energy * 0.18
         : provider === "minimax"
           ? 0.08 + energy * 0.08
@@ -463,7 +467,7 @@ export function buildCreatures(
             // position is fixed, so horizontal travel is what gives them a
             // scuttling silhouette instead of a bobbing one.
             ? 0.34 + energy * 0.16
-            : 0.12 + energy * 0.12;
+            : 0.12 + energy * 0.12) * speedScale;
       const wanderAmp = provider === "codex"
         ? 0.24 + energy * 0.06
         : isBottomDweller

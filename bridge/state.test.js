@@ -318,19 +318,18 @@ test('each live agent gets its OWN measured output rate', () => {
   assert.equal(out.models.minimax.tokensPerSecond, 60);
 });
 
-test('an agent rate is HELD between turns instead of dropping to zero', () => {
+test('an agent rate drops to zero when output is unchanged', () => {
   const state = { models: { minimax: { agentCount: 1, tokensPerSecond: 0, agentRates: [] } } };
   const live = {
     counts: { minimax: 1 },
     rates: { minimax: [{ sessionId: 'a', outputTokens: 1000 }] }
   };
-  // The session's output total did not move this poll, but its last
-  // measured rate is still that agent's own speed.
+  // The session's output total did not move this poll, so the agent is idle.
   const memory = {
     sampledAt: NOW - 10_000,
     liveOutputTokens: { a: 1000 },
     liveAgentRates: { a: 42 }
   };
   const { state: out } = applyLiveAgents(state, live, memory, NOW);
-  assert.deepEqual(out.models.minimax.agentRates, [42]);
+  assert.deepEqual(out.models.minimax.agentRates, [0]);
 });
