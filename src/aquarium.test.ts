@@ -159,4 +159,18 @@ describe("aquarium motion", () => {
       .toBeGreaterThan(jelly.wanderPhase - jellyStart.wanderPhase);
     expect(crab.depth).toBe(0);
   });
+
+  test("bottom dwellers scuttle across the floor and keep their legs animated while idle", () => {
+    const telemetry = {
+      muse: { ...codex(0).codex, agentCount: 1, agentRates: [0] },
+      "opencode-go": { ...codex(0).codex, agentCount: 1, agentRates: [0] },
+    } as Record<Provider, ProviderTelemetry>;
+    const first = buildCreatures(telemetry, [], 0);
+    const next = buildCreatures(telemetry, first, 1);
+
+    expect(first).toHaveLength(2);
+    expect(next.every((c) => c.depth === 0)).toBe(true);
+    expect(next.every((c) => c.frameStep === 2)).toBe(true);
+    expect(next.every((c, i) => Math.abs(c.x - first[i].x) > 0.01)).toBe(true);
+  });
 });

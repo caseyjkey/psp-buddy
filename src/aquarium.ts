@@ -408,7 +408,13 @@ export function buildCreatures(
     for (let i = 0; i < count; i++) {
       const rate = agentRate(t, i);
       const energy = clamp(rate / config.rateForFullEnergy, 0, 1);
-      const step = frameStepFor(energy);
+      const isBottomDweller = provider === "muse" || provider === "meta" || provider === "opencode-go";
+      // Ground creatures need their legs and pincers to keep moving even
+      // when their provider is idle. The old energy-derived step reached 5
+      // at idle, making an otherwise animated crab look like a bobbing
+      // sticker. Keep their atlas cadence lively; energy still controls
+      // travel speed, not whether the legs animate.
+      const step = isBottomDweller ? 2 : frameStepFor(energy);
       const key = `${provider}:${i}`;
       const prev = prevByKey.get(key);
 
@@ -417,7 +423,6 @@ export function buildCreatures(
       // tired/asleep -- and every species is pulled into its own vertical
       // band, so the tank has territories (sky / water / floor) instead of
       // a soup.
-      const isBottomDweller = provider === "muse" || provider === "meta" || provider === "opencode-go";
       const rawDepth = isBottomDweller
         // Bottom dwellers are bottom-aligned, not merely assigned a low
         // swim band. Any positive depth leaves a visible gap above the sand.
@@ -454,12 +459,15 @@ export function buildCreatures(
         : provider === "minimax"
           ? 0.08 + energy * 0.08
           : isBottomDweller
-            ? 0.13 + energy * 0.10
+            // Bottom dwellers make deliberate floor passes. Their vertical
+            // position is fixed, so horizontal travel is what gives them a
+            // scuttling silhouette instead of a bobbing one.
+            ? 0.34 + energy * 0.16
             : 0.12 + energy * 0.12;
       const wanderAmp = provider === "codex"
         ? 0.24 + energy * 0.06
         : isBottomDweller
-          ? 0.30 + energy * 0.06
+          ? 0.40 + energy * 0.04
           : 0.22 + energy * 0.06;
       const wanderPhase = prev && Number.isFinite(prev.wanderPhase)
         ? prev.wanderPhase + dt * angularSpeed
